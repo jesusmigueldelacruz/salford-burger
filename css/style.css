@@ -266,3 +266,40 @@ h6,
         background: #111111;
     }
 }
+.menu .position-relative {
+    height: 300px;
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease;
+}
+
+.menu .position-relative:hover {
+    transform: scale(1.02);
+}
+
+.menu .position-relative img {
+    max-height: 220px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    margin: auto;
+}
+
+.menu .position-absolute {
+    position: relative !important;
+    margin-top: 10px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background-color: #111111;
+    color: #FFA726;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: inline-block;
+}
