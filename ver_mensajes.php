@@ -2,7 +2,8 @@
 // Configurar zona horaria UTC-5 (Hora de Perú)
 date_default_timezone_set('America/Lima');
 
-// Archivo para ver los mensajes recibidos del formulario de contacto
+// Incluir configuración de base de datos
+require_once 'config/database.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -54,66 +55,39 @@ date_default_timezone_set('America/Lima');
         </div>
         
         <?php
-        $archivo_mensajes = "mensajes_contacto.txt";
-        
-        if (file_exists($archivo_mensajes) && filesize($archivo_mensajes) > 0) {
-            $contenido = file_get_contents($archivo_mensajes);
+        try {
+            $pdo = getDBConnection();
             
-            // Dividir los mensajes
-            $mensajes = explode("=== NUEVO MENSAJE DE CONTACTO ===", $contenido);
+            // Contar mensajes
+            $stmt_count = $pdo->query("SELECT COUNT(*) as total FROM mensajes_contacto");
+            $total_mensajes = $stmt_count->fetch()['total'];
             
-            // Eliminar el primer elemento vacío
-            array_shift($mensajes);
-            
-            if (!empty($mensajes)) {
-                echo "<div class='alert alert-info'>";
-                echo "<strong>Total de mensajes:</strong> " . count($mensajes);
-                echo "</div>";
+            if ($total_mensajes > 0) {
+                echo "<div class='alert alert-info'>Total de mensajes: $total_mensajes</div>";
                 
-                // Mostrar mensajes (los más recientes primero)
-                $mensajes = array_reverse($mensajes);
+                // Obtener mensajes (más recientes primero)
+                $stmt = $pdo->query("SELECT * FROM mensajes_contacto ORDER BY fecha_registro DESC");
+                $mensajes = $stmt->fetchAll();
                 
                 foreach ($mensajes as $mensaje) {
-                    if (trim($mensaje)) {
-                        echo "<div class='mensaje-individual'>";
-                        
-                        // Procesar el contenido del mensaje
-                        $lineas = explode("\n", trim($mensaje));
-                        
-                        foreach ($lineas as $linea) {
-                            $linea = trim($linea);
-                            if (empty($linea) || $linea === "==============================") continue;
-                            
-                            if (strpos($linea, "Fecha:") === 0) {
-                                echo "<div class='fecha-mensaje'><i class='fa fa-calendar'></i> " . htmlspecialchars($linea) . "</div>";
-                            } elseif (strpos($linea, "Nombre:") === 0) {
-                                echo "<h5><i class='fa fa-user'></i> " . htmlspecialchars(substr($linea, 8)) . "</h5>";
-                            } elseif (strpos($linea, "Email:") === 0) {
-                                echo "<p><strong><i class='fa fa-envelope'></i> Email:</strong> " . htmlspecialchars(substr($linea, 7)) . "</p>";
-                            } elseif (strpos($linea, "Asunto:") === 0) {
-                                echo "<p><strong><i class='fa fa-tag'></i> Asunto:</strong> " . htmlspecialchars(substr($linea, 8)) . "</p>";
-                            } elseif (strpos($linea, "Mensaje:") === 0) {
-                                echo "<p><strong><i class='fa fa-comment'></i> Mensaje:</strong></p>";
-                                echo "<div class='border-start border-primary ps-3 ms-3'>" . nl2br(htmlspecialchars(substr($linea, 9))) . "</div>";
-                            }
-                        }
-                        
-                        echo "</div>";
-                    }
+                    echo "<div class='mensaje-individual'>";
+                    echo "<div class='fecha-mensaje'><i class='fa fa-calendar'></i> " . htmlspecialchars($mensaje['fecha_registro']) . "</div>";
+                    echo "<h5><i class='fa fa-user'></i> " . htmlspecialchars($mensaje['nombre']) . "</h5>";
+                    echo "<p><strong><i class='fa fa-envelope'></i> Email:</strong> " . htmlspecialchars($mensaje['email']) . "</p>";
+                    echo "<p><strong><i class='fa fa-tag'></i> Asunto:</strong> " . htmlspecialchars($mensaje['asunto']) . "</p>";
+                    echo "<p><strong><i class='fa fa-comment'></i> Mensaje:</strong></p>";
+                    echo "<div class='border-start border-primary ps-3 ms-3'>" . nl2br(htmlspecialchars($mensaje['mensaje'])) . "</div>";
+                    echo "</div>";
                 }
             } else {
                 echo "<div class='sin-mensajes'>";
                 echo "<i class='fa fa-inbox fa-3x mb-3'></i>";
                 echo "<h3>No hay mensajes aún</h3>";
-                echo "<p>Los mensajes del formulario de contacto aparecerán aquí.</p>";
+                echo "<p>Los mensajes aparecerán aquí cuando alguien envíe el formulario.</p>";
                 echo "</div>";
             }
-        } else {
-            echo "<div class='sin-mensajes'>";
-            echo "<i class='fa fa-inbox fa-3x mb-3'></i>";
-            echo "<h3>No hay mensajes aún</h3>";
-            echo "<p>Los mensajes del formulario de contacto aparecerán aquí cuando alguien envíe el formulario.</p>";
-            echo "</div>";
+        } catch (Exception $e) {
+            echo "<div class='alert alert-danger'>Error al cargar mensajes: " . htmlspecialchars($e->getMessage()) . "</div>";
         }
         ?>
         

@@ -1,10 +1,11 @@
 <?php
 // Configurar zona horaria UTC-5 (Hora de Perú)
 date_default_timezone_set('America/Lima');
+require_once 'config/database.php';
 
 // Verificar si el formulario fue enviado
 if ($_POST) {
-    // Obtener y limpiar los datos del formulario
+    // Obtener datos del formulario
     $nombre = htmlspecialchars(trim($_POST['nombre']));
     $email = htmlspecialchars(trim($_POST['email']));
     $asunto = htmlspecialchars(trim($_POST['asunto']));
@@ -13,41 +14,29 @@ if ($_POST) {
     // Validaciones básicas
     $errores = [];
     
-    if (empty($nombre)) {
-        $errores[] = "El nombre es requerido";
-    }
+    if (empty($nombre)) $errores[] = "El nombre es requerido";
+    if (empty($email)) $errores[] = "El email es requerido";
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errores[] = "Email inválido";
+    if (empty($asunto)) $errores[] = "El asunto es requerido";
+    if (empty($mensaje)) $errores[] = "El mensaje es requerido";
     
-    if (empty($email)) {
-        $errores[] = "El email es requerido";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errores[] = "El formato del email no es válido";
-    }
-    
-    if (empty($asunto)) {
-        $errores[] = "El asunto es requerido";
-    }
-    
-    if (empty($mensaje)) {
-        $errores[] = "El mensaje es requerido";
-    }
-    
-    // Si no hay errores, procesar el formulario
+    // Si no hay errores, guardar en base de datos
     if (empty($errores)) {
-        // Guardar mensaje en archivo de texto
-        $archivo_mensajes = "mensajes_contacto.txt";
-        $datos_mensaje = "=== NUEVO MENSAJE DE CONTACTO ===\n";
-        $datos_mensaje .= "Fecha: " . date('Y-m-d H:i:s') . "\n";
-        $datos_mensaje .= "Nombre: $nombre\n";
-        $datos_mensaje .= "Email: $email\n";
-        $datos_mensaje .= "Asunto: $asunto\n";
-        $datos_mensaje .= "Mensaje: $mensaje\n";
-        $datos_mensaje .= "==============================\n\n";
-        
-        // Intentar guardar el archivo
-        if (file_put_contents($archivo_mensajes, $datos_mensaje, FILE_APPEND | LOCK_EX)) {
-            $exito = "¡Mensaje recibido exitosamente! Te contactaremos pronto.";
-        } else {
-            $errores[] = "Error al procesar el mensaje. Por favor, inténtalo más tarde.";
+        try {
+            $pdo = getDBConnection();
+            $sql = "INSERT INTO mensajes_contacto (nombre, email, asunto, mensaje, fecha_registro) 
+                    VALUES (:nombre, :email, :asunto, :mensaje, :fecha_registro)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':nombre' => $nombre,
+                ':email' => $email,
+                ':asunto' => $asunto,
+                ':mensaje' => $mensaje,
+                ':fecha_registro' => date('Y-m-d H:i:s')
+            ]);
+            $exito = "¡Mensaje enviado exitosamente!";
+        } catch (Exception $e) {
+            $errores[] = "Error al enviar el mensaje";
         }
     }
 }

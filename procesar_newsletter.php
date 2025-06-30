@@ -1,6 +1,7 @@
 <?php
 // Configurar zona horaria UTC-5 (Hora de Perú)
 date_default_timezone_set('America/Lima');
+require_once 'config/database.php';
 
 // Verificar si el formulario fue enviado
 if ($_POST && isset($_POST['email_newsletter'])) {
@@ -10,31 +11,30 @@ if ($_POST && isset($_POST['email_newsletter'])) {
     if (empty($email)) {
         $error = "El email es requerido";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "El formato del email no es válido";
+        $error = "Email inválido";
     } else {
-        // Verificar si el email ya está registrado
-        $archivo_newsletter = "newsletter_suscriptores.txt";
-        $suscriptores = [];
-        
-        if (file_exists($archivo_newsletter)) {
-            $contenido = file_get_contents($archivo_newsletter);
-            $suscriptores = explode("\n", $contenido);
-        }
-        
-        // Verificar si ya está suscrito
-        if (in_array($email, $suscriptores)) {
-            $error = "Este email ya está suscrito a nuestro newsletter";
-        } else {
-            // Agregar nuevo suscriptor
-            $datos_suscriptor = $email . "\n";
-            file_put_contents($archivo_newsletter, $datos_suscriptor, FILE_APPEND | LOCK_EX);
+        try {
+            $pdo = getDBConnection();
             
-            // También guardar con fecha en otro archivo
-            $archivo_detallado = "newsletter_detallado.txt";
-            $datos_detallado = "Fecha: " . date('Y-m-d H:i:s') . " - Email: " . $email . "\n";
-            file_put_contents($archivo_detallado, $datos_detallado, FILE_APPEND | LOCK_EX);
+            // Verificar si ya existe
+            $sql_check = "SELECT id FROM newsletter_suscriptores WHERE email = :email";
+            $stmt_check = $pdo->prepare($sql_check);
+            $stmt_check->execute([':email' => $email]);
             
-            $exito = "¡Te has suscrito exitosamente a nuestro newsletter!";
+            if ($stmt_check->fetch()) {
+                $error = "Este email ya está suscrito";
+            } else {
+                // Insertar nuevo suscriptor
+                $sql_insert = "INSERT INTO newsletter_suscriptores (email, fecha_suscripcion) VALUES (:email, :fecha)";
+                $stmt_insert = $pdo->prepare($sql_insert);
+                $stmt_insert->execute([
+                    ':email' => $email,
+                    ':fecha' => date('Y-m-d H:i:s')
+                ]);
+                $exito = "¡Suscrito exitosamente!";
+            }
+        } catch (Exception $e) {
+            $error = "Error al procesar suscripción";
         }
     }
 }
