@@ -6,3 +6,11 @@ Asunto: Horarios de atencion
 Mensaje: quiero saber su horario de atencion los domingos
 ==============================
 
+=== NUEVO MENSAJE DE CONTACTO ===
+Fecha: 2025-06-29 23:03:53
+Nombre: Miguel
+Email: miguel@gmail.com
+Asunto: Hacen delivery?
+Mensaje: Quiero saber si hacen delivery a tal zona
+==============================
+
